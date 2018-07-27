@@ -21,7 +21,7 @@ function BuildADeck() {
     return deck;
   }
   
-  function PickACard() {
+  function pickCard() {
     return Math.floor(Math.random() * 52);
   }
   
@@ -35,15 +35,23 @@ function BuildADeck() {
 
     } else {
       // Pick two random cards
-      let card1 = PickACard();
-      let card2 = PickACard();
-  
+
+      let card1 = pickCard();
+      let card2 = pickCard();
+        
       let playerCards = [deck[card1], deck[card2]];
+
+      deck.splice(card1, 1);
+      deck.splice(card2, 1);
+
+      console.log(deck);
           
       console.log("Welcome to Blackjack!");
       console.log("You are dealt: ");
       console.log(" " + playerCards[0].name);
       console.log(" " + playerCards[1].name);
+
+      console.log("There are %d cards left in the deck", deck.length);
     }
   }
   
