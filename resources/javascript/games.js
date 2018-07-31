@@ -1,7 +1,12 @@
-// Todo - 
-// Add WIN and LOSE functionality - so that when the player busts, the game is over. 
-// Would also like a better way to deal with the dealer's cards. I used the alert just so that it could be seen
-// I want to add the ability to play with multiple decks
+// Todo/Wish List - 
+// 
+// * Would also like a better way to deal with the dealer's cards. I used the alert just so that it could be seen
+//    Perhaps use a wait and some text like a dealer is talking...
+// * Refactor to stream line the code - it's a bit disorganized
+// * Add some styling to the page so that it is prettier - maybe even have some cards display and not just the names of the cards
+// * Add tests - figure out how that works...
+// * Figure out why my while loop doesn't work with the condition right in the loop statement!!!
+
 
 // DOM Variables
 // Action buttons
@@ -27,7 +32,13 @@ let resultsAreas = document.getElementById("results-area");
 
 resultsAreas.style.display = "none";
 
-// deck and player's hands
+let totalWinsDealerText = document.getElementById("total-wins-dealer");
+let totalWinsPlayerText = document.getElementById("total-wins-player");
+
+totalWinsDealerText.style.display = "none";
+totalWinsPlayerText.style.display = "none";
+
+// deck(s), player's hands and status variables
 let g_deck = [];
 let g_playerCards = [];
 let g_dealerCards = [];
@@ -36,6 +47,8 @@ let g_gameStarted = false;
 let g_handDone = false;
 let g_playerWon = false;
 
+let g_totalHandsWonPlayer = 0;
+let g_totalHandsWonDealer = 0;
 
 // Suits and card names
 let g_suits = ["Hearts", "Spades", "Diamonds", "Clubs"];
@@ -48,13 +61,27 @@ function createDeck() {
     // Make sure the deck is empty before filling it up
     g_deck = [];
 
-    for (i = 0; i < g_suits.length; i++) {
-      // Setup the names and values for the cards
-      for (let cardCounter = 0; cardCounter < g_cardNames.length; cardCounter++) {
-        card = {name: (g_cardNames[cardCounter] + " of " + g_suits[i]), 
-                value: cardCounter + 1, 
-                ace: cardCounter == 1 ? true : false};
-        g_deck.push(card);
+    // I'll put a maximum of 4 (or some resonable number) when this is done by a prompt!
+    let numDecks = 0;
+    let done = false;
+    do {
+      numDecks = prompt("How many decks do you want to play with? (number between 1 and 4)", 1);
+      // todo - this same check doesn't work in the while statement itself. For some reason, it works correctly
+      // if I deal with it this way!!
+      if ((numDecks >= 1) && (numDecks <= 4))
+        done = true;
+    } while (!done); 
+
+    // Do this once for each deck used.
+    for (let counter = 0; counter < numDecks; counter++) {
+      for (i = 0; i < g_suits.length; i++) {
+        // Setup the names and values for the cards
+        for (let cardCounter = 0; cardCounter < g_cardNames.length; cardCounter++) {
+          card = {name: (g_cardNames[cardCounter] + " of " + g_suits[i]), 
+                  value: cardCounter + 1, 
+                  ace: cardCounter == 1 ? true : false};
+          g_deck.push(card);
+        }
       }
     }
     console.log(g_deck);
@@ -82,6 +109,8 @@ function dealHands() {
     g_dealerCards.push(g_deck[card2]);
     g_deck.splice(card1, 1);
     g_deck.splice(card2, 1);
+
+    console.log(g_deck);
 }
 
 function scoreHand(hand) {
@@ -146,9 +175,11 @@ function showStatus() {
     textArea.innerText = "Welcome to Blackjack!";
   }
   else {
-    textArea.innerText = "Game in progress...";
     displayPlayerResults();
     displayDealerResults();
+
+    totalWinsDealerText.innerText = "Total Hands Won by Dealer: " + g_totalHandsWonDealer;
+    totalWinsPlayerText.innerText = "Total Hands Won by Player: " + g_totalHandsWonPlayer;
   }
 }
 
@@ -156,10 +187,17 @@ function showStatus() {
 newGameButton.addEventListener('click', function() {
   
   g_gameStarted = true;
+  g_totalHandsWonPlayer = 0;
+  g_totalHandsWonDealer = 0;
+
+  textArea.innerText = "Game in progress...";
 
   newGameButton.style.display = "none"
   hitButton.style.display = "inline";
   stayButton.style.display = "inline";
+
+  totalWinsDealerText.style.display = "block";
+  totalWinsPlayerText.style.display = "block";
 
   resultsAreas.style.display = "block";
   
@@ -167,16 +205,21 @@ newGameButton.addEventListener('click', function() {
   createDeck();
   
   // Do some minimal error checking, if something went wrong don't continue with the game
-  if (g_deck.length != 52) {
-    console.log("Opps!!!! - Error Length = " + g_deck.length);
-
-  } else {
-    dealHands();
-
-    // Let the player know what's going on
-    showStatus();
-  }
+  dealHands();
+  // Let the player know what's going on
+  showStatus();
 });
+
+function completeHand() {
+  g_handDone = true;
+
+  doneButton.style.display = "inline";
+  newHandButton.style.display = "inline";
+
+  hitButton.style.display = "none";
+  stayButton.style.display = "none";
+
+}
 
 hitButton.addEventListener('click', function() {
   
@@ -188,16 +231,20 @@ hitButton.addEventListener('click', function() {
   g_playerCards.push(g_deck[newCard]);
   g_deck.splice(newCard, 1);
 
+  // Check that the player hasn't gone "bust"
+  if (scoreHand(g_playerCards) > 21) {
+    completeHand();
+    g_totalHandsWonDealer = g_totalHandsWonDealer + 1;
+    textArea.innerText = "YOU WENT BUST....  Better luck next time!"
+  }
   showStatus();
 });
   
 stayButton.addEventListener('click', function() {
   // Now it's the dealer's turn to get new cards.
-  
-  g_handDone = true;
   showStatus();
 
-  let score = scoreHand(g_dealerCards)
+  let score = scoreHand(g_dealerCards);
   while (score < 15) {
     let newCard = pickCard();
     g_dealerCards.push(g_deck[newCard]);
@@ -209,11 +256,21 @@ stayButton.addEventListener('click', function() {
     showStatus();
   }
 
-  doneButton.style.display = "inline";
-  newHandButton.style.display = "inline";
+  completeHand();
 
-  hitButton.style.display = "none";
-  stayButton.style.display = "none";
+  // Figure out who won
+  let dealerScore = scoreHand(g_dealerCards);
+  let playerScore = scoreHand(g_playerCards);
+  if ((dealerScore <= 21) && (dealerScore > playerScore)) {
+    // player lost
+    textArea.innerText = "Dealer Wins!"
+    g_totalHandsWonDealer = g_totalHandsWonDealer + 1;
+  }
+  else {
+    textArea.innerText = "You Won!!!  Congratulations!!!! "
+    g_totalHandsWonPlayer = g_totalHandsWonPlayer + 1
+  }
+  showStatus();
 });
 
 doneButton.addEventListener('click', function() {
@@ -229,6 +286,9 @@ doneButton.addEventListener('click', function() {
   doneButton.style.display = "none";
   newHandButton.style.display = "none";
 
+  totalWinsDealerText.style.display = "none";
+  totalWinsPlayerText.style.display = "none";
+
   newGameButton.style.display = "block";
   showStatus();
   
@@ -239,6 +299,8 @@ newHandButton.addEventListener('click', function() {
       alert("Sorry, not enough cards left. Click done to start again");
     }
     else {
+        textArea.innerText = "Game in progress...";
+        g_handDone = false;
         g_playerCards = [];
         g_dealerCards = [];
         dealHands();
@@ -250,6 +312,5 @@ newHandButton.addEventListener('click', function() {
         hitButton.style.display = "inline";
         stayButton.style.display = "inline";
     }  
-    g_handDone = false;
-    
+
 });
