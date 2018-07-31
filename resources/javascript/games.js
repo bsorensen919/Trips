@@ -66,10 +66,13 @@ function createDeck() {
     let done = false;
     do {
       numDecks = prompt("How many decks do you want to play with? (number between 1 and 4)", 1);
-      // todo - this same check doesn't work in the while statement itself. For some reason, it works correctly
-      // if I deal with it this way!!
-      if ((numDecks >= 1) && (numDecks <= 4))
+      
+      if ((numDecks >= 1) && (numDecks <= 4)) {
         done = true;
+      }
+      else {
+        console.log("done is false so the condition failed");
+      }
     } while (!done); 
 
     // Do this once for each deck used.
